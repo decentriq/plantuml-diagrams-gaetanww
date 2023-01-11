@@ -1,0 +1,36 @@
+@startuml Auth0
+title DQ-Auth Endorsement
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+skinparam SequenceMessageAlignment left
+
+participant "Client" as cli
+participant "User-Auth Enclave" as encl
+participant "Driver" as driv
+participant "DQ Platform" as plat
+participant "DQ Auth0 tenant" as idp
+
+=== DQ-auth ==
+== Solution 1 ==
+cli<->plat: Authentication
+cli->plat: Retrieve DQ pki ""certificate{pkA}""
+group Authenticated channel with pkA
+cli->encl: ""certificate{pkA}""
+encl<-encl: Verify certificate
+cli<-encl: ""DQ-auth{user@example.com}/pkA""
+end
+== Solution 2 ==
+cli<->idp: Authentication
+cli<-idp: oidc_token
+
+group Authenticated channel with pkA
+cli->encl: oidc_token
+encl->idp: Get token signing key
+encl<-encl: Verify token
+cli<-encl: ""DQ-auth{user@example.com}/pkA""  
+end 
+
+@enduml

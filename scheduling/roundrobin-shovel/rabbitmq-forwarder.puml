@@ -1,0 +1,54 @@
+
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+' skinparam ParticipantPadding 20
+' skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+hide footbox
+
+queue "<unified-queue>/<organization-id>" as orgQ
+participant "RabbitmqForwarder" as fwd
+queue "<unified-queue>" as unifiedQ
+participant "Tokio Runtime" as rt
+
+orgQ->fwd: Message
+fwd->rt: RequestLock(Mutex)
+rt->rt: AddRequest to queue
+
+note over rt
+Tokio will pop the queue in a FIFO manner
+end note
+
+fwd<-rt: Lock
+
+loop while Message is rejected
+    fwd->unifiedQ: Message
+    alt Has no free space
+
+    note over unifiedQ
+    The queue has a max-length
+    of 1. So if there is a 
+    non-consumed message
+    (i.e. Ready state) it will
+    reject the message
+    end note
+
+        fwd<-unifiedQ: Reject
+        
+    else Has 1 free space
+        fwd<-unifiedQ: Confirm
+    end
+end
+note over fwd
+There is one lock per
+<organization-id> for each
+<unified-queue>, so we have
+a round-robin access to
+<unified-queue> for each
+<organization-id> that are
+currently requesting a lock.
+end note
+
+
+@enduml

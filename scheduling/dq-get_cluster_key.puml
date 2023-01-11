@@ -1,0 +1,42 @@
+@startuml dq-attestation
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+' hide footbox
+
+box "Enclave"
+participant Worker as worker
+participant "Enclave Common" as com
+participant "CC API" as ccApi
+end box
+participant "RoT for Reporting" as rot
+participant "Other Enclave" as otherEnc
+
+com<-worker:        get_cluster_key(\n\tinstance_dh_keypair,\n\tself_fatquote,\n\tkdf)
+com->com:           get_attestation_specs(\n\tfatquote)
+alt key is stored locally
+    com->com:           retrieve_sealed_cluster_key()
+    ccApi<-com:         rederive_seal_key(params)
+    rot<-ccApi:         derive_key(params)
+    return seal_key
+    ccApi-->com:        seal_key
+    com->com:           unseal(seal_key,\n\tsealed_cluster_key)
+    com-->worker:       cluster_key
+else key not stored locally
+    alt key is on sister enclave
+        com->otherEnc:      cluster_key_extension_request(\n\tself_fatquote,\n\tinstance_dh_pub_key)
+        otherEnc->otherEnc: verify(self_fatquote)
+        otherEnc->otherEnc: encrypt(\n\tinstance_dh_pub_key)
+        com<--otherEnc:   other_fatquote, encrypted_cluster_key
+        com->com:           verify(other_fatquote)
+        note right: Need to check the point of this?\nAlso, how do you check\ntimestamp?
+        com->com:           decrypt(\n\tinstance_dh_key_pair,\n\tencrypted_cluster_key)
+        else No cluster key created before
+        com->com:           generate_cluster_key()
+        end
+    com->com:           store_key_locally(\n\tcluster_key)
+    com-->worker:       cluster_key
+end
+
+@enduml

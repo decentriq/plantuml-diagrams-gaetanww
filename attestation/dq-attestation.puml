@@ -1,0 +1,31 @@
+@startuml dq-attestation
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+' hide footbox
+box "Enclave"
+participant Worker as worker
+participant "CC API" as ccApi
+end box
+participant "RoT for Reporting" as rot
+database "KV store" as kv
+
+worker -> worker:   create instance_dh_key_pair
+worker -> worker:   create instance_signing_keypair
+worker -> worker:   report_data := (dh_key, sign_key)
+== initialize_platform ==
+worker -> ccApi++:  report_data
+ccApi -> rot++:     quote(report_data)
+return              quote
+return              fatquote
+== Initialize Worker Instance ==
+worker -> worker:   get cluster_key 
+note right: retrieve or\ncreate key
+worker -> worker:   get timestamp
+worker -> worker:   sign cluster_key with\ninstance_signing_key
+worker -> kv:       store\n(attestation_specification,\nsigned_cluster_key)
+
+
+
+@enduml

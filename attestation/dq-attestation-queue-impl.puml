@@ -1,0 +1,69 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam MaxMessageSize 60
+
+participant "Driver" as drv
+participant "Driver Queue Ext." as dext
+queue "Task Queue\nOrg1" as que1
+queue "Task Queue\nOrg2" as que2
+participant "Round-robin Shovel" as shov
+queue "Task Queue" as tque
+participant "Worker Queue Ext." as wext
+participant "Worker" as wrk
+participant "Consul KV" as cons
+
+note over tque
+Task Queue's
+limit is  nb of
+workers +1 
+end note
+
+===Init shovel==
+shov->cons: Get Config (orgs, queues)
+return orgs,queues
+que1<-shov: Subscribe
+que2<-shov: Subscribe
+
+===Driver task distribution==
+->drv: ExecuteCompute
+drv->dext: Task
+dext->dext: Check org(Task)
+alt org1
+    dext->que1: Task
+else org2
+    dext->que2: Task
+end
+
+
+===Shovelling==
+loop
+    que1->shov: Task
+    que2->shov: Task
+    shov<-shov: chan = select channel in round-robin fashion
+    shov->tque++: Task
+    return ACK
+    alt Coming from org1
+    que1<-shov: ACK
+    else Coming from org2
+    que2<-shov: ACK
+    end
+end
+
+===Executing==
+tque->wext: Task
+note right
+Task is distributed to workers
+by RabbitMQ in round-robin
+fashion
+end note
+wext->wrk++: Execute Task
+return Result
+tque<-wext: ACK
+
+===Adding new org==
+shov->cons: Poll config
+return orgs queues
+shov->shov: Add new queues and channels accordingly
+
+@enduml

@@ -1,0 +1,74 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam MaxMessageSize 60
+
+participant "Driver" as drv
+participant "Driver Queue Ext." as dext
+queue "Task Queue\nOrg1" as que1
+queue "Task Queue\nOrg2" as que2
+participant "Consul" as cons
+participant "Worker Queue Ext." as wext
+participant "Worker" as wrk
+
+note over cons
+Semaphores initialized
+per org
+end note
+note over wext
+Worker init time
+end note
+ref over wext,cons
+Acquire the first free
+semaphore. Returns <org>
+assignment for wext.
+Worker would register healtcheck
+for invalidation or TTL
+end ref
+alt worker assigned to org1
+    que1<-wext: Subscribe
+else worker assigned to org2
+    que2<-wext: Subscribe
+end  
+...
+...Later...
+...
+
+->drv: ExecuteCompute
+drv->dext: Task
+dext->dext: Check org(Task)
+alt org1
+    dext->que1: Task
+else org2
+    dext->que2: Task
+end
+alt worker assigned to org1
+    que1->wext: Task
+else worker assigned to org2
+    que2->wext: Task
+end
+wext->wrk++: ExecuteTask
+return Result<Ok,Err>
+alt Ok
+    alt worker assigned to org1
+        que1<-wext: ACK
+    else worker assigned to org2
+        que2<-wext: ACK
+    end
+else Err
+    alt worker assigned to org1
+        que1<-wext: NACK
+    else org2
+        que2<-wext: NACK
+    end
+end
+
+note over wext
+Initially worker would
+keep waiting for new task
+from his assigned org
+or check if new assignment
+end note
+
+
+@enduml

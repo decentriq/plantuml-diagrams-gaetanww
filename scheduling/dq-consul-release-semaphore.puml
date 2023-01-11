@@ -1,0 +1,26 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam MaxMessageSize 120
+
+participant "Semaphore Releasing Client" as cli
+participant "Consul" as cons
+title Releasing Semaphore
+->cli: <org>, <sessionID>
+cli->cons++: GET /v1/kv/<org1>/.lock
+return lock holders
+cli<-cli: remove <sessionID> from lock holders
+loop
+    cli->cons++: PUT lock_holders /v1/kv/org1/.lock?cas=<lock-modify-index>
+    return Result<Ok, Err>
+    alt Err
+        cli->cons++: WATCH lock_holders /v1/kv/org1/.lock
+        ... Block until free...
+        return lock_holders
+        cli->cli: remove <sessionID> from lock holders
+    else Ok
+        cli->cli: break loop
+    end
+end
+<-cli: Ok
+@enduml

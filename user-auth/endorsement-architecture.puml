@@ -1,0 +1,32 @@
+@startuml Auth0
+title Endorsements: High-Level view
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+skinparam SequenceMessageAlignment left
+
+participant "Client" as cli
+participant "User-Auth Enclave" as encl
+participant "Driver" as driv
+
+note over encl
+User-Auth enclave could be
+driver initially.
+end note
+== DCR Setup ==
+cli->driv: CreateDCR(\npolicy=userA(endorsements...))
+== Endorsements ==
+loop "for as many endorsements as required"
+    group Authenticated channel with pkA
+    cli<->encl: Cli proves attribute (e.g., DQ-auth, DcrSecret, email OTP)
+    cli<-encl: Signed endorsement over pkA: ""Endorsement/pkA"" (e.g., ""DQ-auth{user@example.com}/pkA"")
+    end
+end
+== Requests ==
+group Authenticated channel with pkA
+cli->driv: ""(Endorsement/pkA)*, Request""
+driv->driv: Check endorsements against policy
+end
+@enduml

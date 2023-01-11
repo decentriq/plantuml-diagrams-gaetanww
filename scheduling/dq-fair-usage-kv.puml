@@ -1,0 +1,33 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam MaxMessageSize 60
+
+participant "Driver" as drv
+participant "Driver Queue Ext." as dext
+queue "Task Queue\nOrg1" as que1
+queue "Task Queue\nOrg2" as que2
+participant "Consul" as cons
+participant "Worker Queue Ext." as wext
+participant "Worker" as wrk
+
+note over cons
+Semaphores initialized
+per org
+end note 
+->drv: ExecuteCompute
+drv->dext: Task
+dext->dext: Check org(Task)
+dext->cons++: PUT kv/<org>/taskID?cas=0
+return Either<Created, AlreadySet>
+alt org1
+    dext->que1: Task
+else org2
+    dext->que2: Task
+end
+
+loop
+
+end
+
+@enduml

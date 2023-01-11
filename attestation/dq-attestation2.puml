@@ -1,0 +1,22 @@
+@startuml dq-attestation2
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+' hide footbox
+participant "Python client" as client
+participant "Session API" as api
+participant "Driver Enclave" as driver
+
+client->api++: get_fatquote
+return fatquote
+client->client: cluster_pub_key = verify(fatquote)
+note right: Is it cluster_pub_key\nof driver enclave\nwe're getting or\ninstance_pub_key?
+client->client: create_tls_session(cluster_pub_key)
+group TLS protected session
+client->driver++: data room definition??
+driver->driver: do something
+return ?
+end
+
+@enduml

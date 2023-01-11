@@ -1,0 +1,21 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+' skinparam ParticipantPadding 20
+' skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+hide footbox
+
+participant Shovel as shovel
+participant "OverallWatcher" as over
+participant "Error Management" as error
+participant "ConsulKvWatcher" as kv_watch
+
+create over
+shovel->over: Run
+create error
+shovel->error: Run
+create kv_watch
+shovel->kv_watch: Run
+
+@enduml

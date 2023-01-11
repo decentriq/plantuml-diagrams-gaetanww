@@ -1,0 +1,27 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+participant Client as ver
+participant Driver as att
+participant "Worker 1" as w1
+participant "Worker 2" as w2
+== Driver's appraisal ==
+ver->att: Challenge
+att<-att: Compute proof\nof state
+ver<--att: Proof
+ver->ver: Appraise proof\nagainst requirements
+ver->att: Workers' security\nrequirements
+== Worker's appraisal ==
+att->w1: Challenge
+w1<-w1: Compute proof\nof state
+att<--w1: Proof
+att->att: Appraise proof\nagainst requirements
+att->w1: Sensitive data
+...
+att->w2: Challenge
+w2<-w2: Compute proof\nof state
+att<--w2: Proof
+att->att: Appraise proof\nagainst requirements
+att->w2: Sensitive data
+
+@enduml

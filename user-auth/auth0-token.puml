@@ -1,0 +1,44 @@
+@startuml Auth0
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+skinparam SequenceMessageAlignment left
+
+actor "User" as usr
+participant "Client" as cli
+participant "User-auth Enclave" as encl
+participant "Auth0" as idp
+
+note over usr, idp
+Authentication method should be one that can't
+be modified by Decentriq admin (e.g., passwordless and not PW)
+end note
+usr <->idp: User Authentication
+cli<-idp: auth0_token
+cli->encl: GetFatquote
+return Fatquote
+cli<-cli: Verify fatquote against attestation specification
+
+
+note over cli, encl
+Communications between Client and enclave
+are protected by  authenticated/encrypted channel
+end note
+cli->encl: cli->encl: AuthenticationMethod::Auth0, auth0_token, user_email
+encl<-encl: Verify token
+note over encl, idp
+Communications between enclave and Auth0
+are authenticated through TLS
+end note
+encl->idp: GetUserByEmail(user_email)
+encl<--idp: Authentication methods (i.e., identities), updated_at
+encl<-encl: verify that authentication methods are untamperable by Decentriq's admins (e.g., via whitelist)
+encl<-encl: verify auth0_token issuance time: ""iat > updated_at"" 
+cli<--encl: Success
+cli->encl: DeltaRequest
+cli<--encl: Signed(DeltaRequest, UserId, AuthenticationMethod::Auth0, timestamp) 
+
+
+@enduml

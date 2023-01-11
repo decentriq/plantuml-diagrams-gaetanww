@@ -1,0 +1,31 @@
+@startuml user-authentication-use case
+left to right direction
+skinparam shadowing false
+skinparam monochrome true
+
+actor "DCR creator" as creator
+actor "Platform User" as usr
+
+(Create DCR) as dcr
+(Set DCR Authorization Policy) as authzDCR
+(Enrol) as enrol
+(Set "in-enclave Authentication"\nPolicy) as authn
+(Perform privileged operation) as priv
+(Auth0 authentication) as authenticates
+(Upload Dataset) as upload
+(Set Authorization Policy for Dataset) as authzData
+
+creator -> dcr
+dcr .> authzDCR: include
+
+
+usr -> enrol
+enrol .> authn: include
+
+usr -> priv
+priv .> authenticates: include
+
+usr -> upload
+upload .> authzData: include
+
+@enduml

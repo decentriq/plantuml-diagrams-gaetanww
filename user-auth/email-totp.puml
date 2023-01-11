@@ -1,0 +1,37 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+hide footbox
+
+participant "Client" as cli
+participant "User-auth Enclave" as encl
+participant "Email Server" as email
+
+cli->encl: GetFatquote
+return Fatquote
+cli<-cli: Verify fatquote against attestation specification
+
+group Encrypted/Authenticated Channel
+cli->encl: AuthenticationMethod::EmailTOTP, email
+end
+encl->email: TLS Handshake
+encl<--email
+group TLS Channel
+encl->email: TOTP
+end
+...
+cli->email:
+cli<--email: TOTP
+...
+
+
+group Encrypted/Authenticated Channel
+cli->encl: TOTP
+encl<-encl: Verify TOTP
+cli<--encl: Signed(DeltaRequest, UserId, AuthenticationMethod::TOTP, timestamp) 
+end 
+
+@enduml

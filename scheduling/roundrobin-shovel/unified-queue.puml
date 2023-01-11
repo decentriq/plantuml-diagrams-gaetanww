@@ -1,0 +1,32 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+' skinparam ParticipantPadding 20
+' skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+hide footbox
+
+queue "<unified-queue>/<organization-id>" as orgQ
+participant "RabbitmqForwarder" as fwd
+participant "UnifiedQueueWatcher" as unified
+participant "OverallWatcher" as over
+
+unified<-over: AddQueue(\n<unified-queue>/<organization-id>)
+opt <unified-queue>/<organization-id>\nis not watched
+unified<-unified: Add queue to watch list
+create fwd
+fwd<-unified: Run(\n<unified-queue>/<organization-id>,\n<unified-queue>,\nArc::clone(Mutex))
+orgQ<-fwd: Subscribe
+end
+
+...
+...
+note over fwd
+If RabbitMQ fails or queue is deleted
+somehow, then the consumer is cancelled. 
+end note
+orgQ->fwd: Cancel consumer
+fwd->unified: RemoveQueue(\n<unified-queue>/<organization-id>)
+unified<-unified: Remove queue from watch list
+destroy fwd
+@enduml

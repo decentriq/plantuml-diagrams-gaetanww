@@ -1,0 +1,36 @@
+@startuml Auth0
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+skinparam SequenceMessageAlignment left
+
+actor "User" as usr
+participant "DQ Admin" as cli
+participant "Super-Admin Enclave" as encl
+participant "Auth0" as idp
+
+== Setup ==
+cli->idp: Setup Auth0 tenant
+cli->encl: Super-admin password
+encl->idp: Set new Super-admin password
+encl->idp: Set secure configuration
+encl<-encl: Activate in-enclave user authentication
+
+== Authentication ==
+usr<->auth0: authentication
+usr<-auth0: Token
+usr<->encl: ""Authenticate{Token}""
+
+
+== In case of unforeseen problem ==
+cli->encl: Reset
+encl<-encl: Deactivate in-enclave user authentication
+encl->idp: Reset password to DQ-known value
+note over encl
+To reactivate the user authentication
+we need to go through the setup flow again
+end note
+
+@enduml

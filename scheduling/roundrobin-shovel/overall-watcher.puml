@@ -1,0 +1,22 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+' skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+hide footbox
+
+participant "UnifiedQueueWatcher" as unified
+participant "OverallWatcher" as over
+participant "ConsulKvWatcher" as kv_watch
+
+over<-kv_watch: HandleQueue(\n<unified-queue>/<organization-id>)
+opt <unified-queue> is not watched
+create unified
+unified<-over: Run(<unified-queue>)
+unified<-unified: Create Fair Arc<Mutex>
+end
+unified<-over: AddQueue(\n<unified-queue>/<organization-id>)
+
+
+@enduml

@@ -1,0 +1,32 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+
+participant "Driver" as drv
+participant "Driver Queue Ext." as dext
+queue "Task Queue" as que
+participant "Consul" as cons
+participant "Worker Queue Ext." as wext
+participant "Worker" as wrk
+
+->drv: ExecuteCompute
+drv->dext: Task
+dext->que: Task
+loop
+    que->wext: Task
+    cons<-wext: Acquire semaphore
+    alt no lease available
+        cons-->wext: No lease
+        note over wext: We ACK and repush\nthe task at the end\nof the queue.
+        que<-wext: ACK Task
+        que<-wext: Task
+    else lease acquired
+        cons-->wext: lease
+        wext->wrk: Task
+        wrk<-wrk: Execute task
+        wrk->wext: Result<Success,Error>
+        cons<-wext: release semaphore
+        que<-wext: ACK Task
+    end
+end
+@enduml

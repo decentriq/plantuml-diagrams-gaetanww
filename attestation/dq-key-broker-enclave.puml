@@ -1,0 +1,31 @@
+@startuml
+skinparam Monochrome true
+skinparam shadowing false
+
+participant "Driver" as driver
+queue "Task Queue" as q1
+participant "Broker" as broker
+participant "Worker 1" as w1 
+
+driver->broker: RequestAttestation
+return Attestation{broker public key} (broker_pk)
+driver<-driver: verify attestation
+
+driver<-driver: encrypt task\nwith broker_pk
+driver->q1: encrypted_task
+
+w1<-w1: boots up
+broker<-w1: request\ntask
+broker->w1: RequestAttestation
+return Attestation{w1_pk, instanceID}
+
+broker<-broker: verify\nattestation
+broker<-broker: check instanceID is unique
+broker<-broker: store instanceID
+
+q1<-broker: retrieve task
+return encrypted_task
+broker<-broker: decrypt\nencrypted_task
+broker->broker: encrypt task\nwith w1_pk
+
+@enduml

@@ -1,0 +1,46 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+
+participant "Driver" as drv
+participant "Driver Queue Ext." as dext
+queue "Buffer" as buf
+participant "Dispatcher" as dsp
+queue "Task Queue" as que
+participant "Consul" as cons
+participant "Worker Queue Ext." as wext
+participant "Worker" as wrk
+
+->drv: ExecuteCompute
+drv->dext: Task
+break buffer is full
+drv<-dext: Error can't send new task: buffer full
+<-drv: No available worker, try again later
+end
+dext->buf: Task
+loop no Task in buffer
+buf<-dsp: Task available?
+buf-->dsp: False
+end
+buf-->dsp: True
+buf<-dsp: get Task
+buf-->dsp: Task
+ref over dsp, cons
+Dispatcher acquire semaphore
+from consul
+    - TTL 10min
+    - no healthcheck
+end ref
+dsp->que: Task(TTL 9min, sessionID)
+loop
+    que->wext: Task
+    wext->wrk: Task
+    wrk->wrk: Execute task
+    wrk->wext: Result<Success,Error>
+    ref over wext,cons
+        Release semaphore from
+        consul
+    end ref
+    que<-wext: ACK Task
+end
+@enduml

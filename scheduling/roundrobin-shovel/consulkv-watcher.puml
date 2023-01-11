@@ -1,0 +1,22 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+' skinparam ParticipantPadding 20
+' skinparam BoxPadding 10
+' skinparam MaxMessageSize 10
+hide footbox
+
+participant "OverallWatcher" as over
+participant "ConsulKvWatcher" as kv_watch
+participant "Consul KV" as kv
+
+kv_watch->kv: poll\nget_keys_with_prefix("rabbitmq/")
+kv<-: Update
+kv_watch<--kv: keys_with_prefix\n(['rabbitmq/<unified-queue>/<organization-id>',\n...])
+loop for key in keys:
+over<-kv_watch: HandleQueue(\n\t<unified-queue>/<organization-id>)
+
+end
+kv_watch->kv: poll\nget_keys_with_prefix("rabbitmq/")
+
+@enduml

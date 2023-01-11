@@ -1,0 +1,10 @@
+@startuml
+
+skinparam Monochrome true
+
+[*] --> DataRoomContext: CreateDataRoomContext
+DataRoomContext --> DataRoomContext: PublishDatasetToDataRoom
+DataRoomContext --> DataRoomContext: RetrieveData
+DataRoomContext --> [*]
+
+@enduml

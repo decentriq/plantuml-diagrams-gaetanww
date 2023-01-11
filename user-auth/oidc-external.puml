@@ -1,0 +1,30 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome true
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+skinparam MaxMessageSize 10
+hide footbox
+
+actor "User" as usr
+participant "Client" as cli
+participant "User-auth Enclave" as encl
+participant "Identity Provider" as idp
+
+usr<->idp: Authentication
+cli<-idp: oidc_token
+
+cli->encl: GetFatquote
+return Fatquote
+cli<-cli: Verify fatquote against attestation specification
+
+
+group Encrypted/Authenticated Channel
+cli->encl: cli->encl: AuthenticationMethod::Oidc, oidc_token
+encl<-encl: Verify token
+cli<--encl: Success
+cli->encl: DeltaRequest
+cli<--encl: Signed(DeltaRequest, UserId, AuthenticationMethod::Oidc, timestamp) 
+end 
+
+@enduml

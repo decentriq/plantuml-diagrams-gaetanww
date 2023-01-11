@@ -1,0 +1,47 @@
+@startuml
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam MaxMessageSize 120
+skinparam MaxAsciiMessageLength 10
+
+participant "Semaphore Leasing Client" as cli
+participant "Consul" as cons
+title Leasing Semaphore
+note over cons
+Consul is initialized
+with 1 semaphore per 
+org set to <limit>
+end note
+->cli: <org>
+cli->cons++: create session (TTL 10min)
+return sessionID
+loop
+    cli->cons++: GET /v1/kv/<org1>?recurse
+    return semaphore limit, lock holders, valid sessions
+    cli->cli: prune invalid sessions from lock holders
+    cli->cli: count valid lock holders
+    alt limit >= valid_holder
+        note over cli: no free space in semaphore
+        cli->cons++: renew(SessionID)
+        return Ok
+        cli->cli: continue loop
+    else
+        cli->cli: lock_holders := pruned_lock_holders\t++ sessionID
+        cli->cons++: PUT lock_holders /v1/kv/org1/.lock?cas=<lock-modify-index>
+        return Result<Ok, Err>
+        alt Err
+            note over cli
+            Couldn't acquire lock
+            there was probably a race
+            end note
+            cli->cons++: renew(SessionID)
+            return Ok
+            cli->cli: continue loop
+        else Ok
+            cli<-cli: break(sessionID)
+        end   
+    end
+end
+<-cli: sessionID
+
+@enduml
